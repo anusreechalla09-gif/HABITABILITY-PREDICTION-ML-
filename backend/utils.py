@@ -18,7 +18,7 @@ import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH   = os.path.join(BASE_DIR, "models", "xgboost.pkl")
+MODEL_PATH   = os.path.join(BASE_DIR, "models", "xgboost.pkl.bin")
 CSV_PATH     = os.path.join(BASE_DIR, "data", "habitability_ranked.csv")
 SAMPLES_PATH = os.path.join(BASE_DIR, "data", "sample_planets.json")
 FEATURES_PATH= os.path.join(BASE_DIR, "data", "feature_cols.json")
