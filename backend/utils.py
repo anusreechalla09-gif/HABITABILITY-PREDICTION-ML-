@@ -7,6 +7,66 @@ Key insight: The model was trained on 304 features (9 numeric + 4 engineered
 + 291 OHE spectral type columns). This module reconstructs that exact feature
 vector from simple user inputs automatically.
 """
+import zipfile
+
+# Auto-unzip model on startup if pkl not present
+zip_path = os.path.join(BASE_DIR, "models", "xgboost.zip")
+pkl_path = os.path.join(BASE_DIR, "models", "xgboost.pkl")
+
+if not os.path.exists(pkl_path) and os.path.exists(zip_path):
+    with zipfile.ZipFile(zip_path, 'r') as z:
+        z.extractall(os.path.join(BASE_DIR, "models"))
+    print("✅ Model unzipped successfully")
+```
+
+This is actually what your GitHub already has (`xgboost.zip`) — so just add this code!
+
+---
+
+## Option 3: Use Render's Disk / Environment (Best for Production)
+
+Store the model on **Render's persistent disk**:
+
+1. Render Dashboard → Your service → **Disks** → Add disk
+   - Mount path: `/opt/render/project/src/models`
+   - Size: 1GB (free tier)
+2. Upload `xgboost.pkl` via Render shell:
+   - Render Dashboard → **Shell** tab
+   - ```bash
+     curl -o /opt/render/project/src/models/xgboost.pkl "YOUR_GOOGLE_DRIVE_DIRECT_LINK"
+```
+
+---
+
+## Option 4: Host model on Google Drive (Most Reliable)
+
+**Step 1:** Upload `xgboost.pkl` to Google Drive → Right click → **Share** → **Anyone with link**
+
+**Step 2:** Get the file ID from the link:
+```
+https://drive.google.com/file/d/FILE_ID_HERE/view
+```
+
+**Step 3:** Add this to the top of `utils.py`:
+```python
+import urllib.request
+
+MODEL_PATH = os.path.join(BASE_DIR, "models", "xgboost.pkl")
+
+def download_model_if_missing():
+    if not os.path.exists(MODEL_PATH):
+        os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+        file_id = "YOUR_GOOGLE_DRIVE_FILE_ID"
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        print("⬇️ Downloading model from Google Drive...")
+        urllib.request.urlretrieve(url, MODEL_PATH)
+        print("✅ Model downloaded successfully")
+
+download_model_if_missing()
+```
+
+---
+
 
 import os
 import json
@@ -18,7 +78,7 @@ import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH   = os.path.join(BASE_DIR, "models", "xgboost.pkl.bin")
+MODEL_PATH   = os.path.join(BASE_DIR, "models", "xgboost.pkl")
 CSV_PATH     = os.path.join(BASE_DIR, "data", "habitability_ranked.csv")
 SAMPLES_PATH = os.path.join(BASE_DIR, "data", "sample_planets.json")
 FEATURES_PATH= os.path.join(BASE_DIR, "data", "feature_cols.json")
