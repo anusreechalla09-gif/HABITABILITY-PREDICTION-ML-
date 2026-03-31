@@ -168,4 +168,4 @@ def _sample_from_csv(n):
     base_cols = ["pl_rade","pl_bmasse","pl_orbper","pl_orbsmax","pl_eqt","pl_dens","st_teff","st_lum","st_met"]
     results   = []
     for _, row in df.sample(min(n, len(df)), random_state=42).iterrows():
-        active = [c.replace("st_spectype_","") for c in spec_cols
+ active = [c.replace("st_spectype_", "") for c in spec_cols if row.get(c, False)]
