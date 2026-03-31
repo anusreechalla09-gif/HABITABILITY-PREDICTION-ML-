@@ -1,11 +1,8 @@
-numpy
-pandas
-matplotlib
-seaborn
-scikit-learn
-xgboost
 flask
+flask-cors
+xgboost
+scikit-learn
+pandas
+numpy
 joblib
-requests
-plotly
 gunicorn
