@@ -1,7 +1,3 @@
-"""
-utils.py — ExoHabitAI Backend Utilities
-"""
-
 import os
 import json
 import random
@@ -11,33 +7,30 @@ import zipfile
 import numpy as np
 import pandas as pd
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH    = os.path.join(BASE_DIR, "models", "xgboost.pkl")
 CSV_PATH      = os.path.join(BASE_DIR, "data", "habitability_ranked.csv")
 SAMPLES_PATH  = os.path.join(BASE_DIR, "data", "sample_planets.json")
 FEATURES_PATH = os.path.join(BASE_DIR, "data", "feature_cols.json")
 
-# ── Auto-unzip model ───────────────────────────────────────────────────────────
 _model_zip = os.path.join(BASE_DIR, "models", "xgboost.zip")
 if not os.path.exists(MODEL_PATH) and os.path.exists(_model_zip):
-    print("⬇️  Unzipping model...")
+    print("Unzipping model...")
     with zipfile.ZipFile(_model_zip, "r") as z:
         z.extractall(os.path.join(BASE_DIR, "models"))
-    print("✅ Model unzipped successfully")
+    print("Model unzipped successfully")
 
-# ── Auto-unzip CSV ─────────────────────────────────────────────────────────────
 _csv_zip = os.path.join(BASE_DIR, "data", "habitability_ranked.zip")
 if not os.path.exists(CSV_PATH) and os.path.exists(_csv_zip):
-    print("⬇️  Unzipping CSV dataset...")
+    print("Unzipping CSV...")
     with zipfile.ZipFile(_csv_zip, "r") as z:
         z.extractall(os.path.join(BASE_DIR, "data"))
-    print("✅ CSV unzipped successfully")
+    print("CSV unzipped successfully")
 
-# ── Singleton model loader ─────────────────────────────────────────────────────
 _model        = None
 _feature_cols = None
 _spec_cols    = None
+
 
 def get_model():
     global _model
@@ -70,10 +63,11 @@ def get_spec_cols():
 
 
 def build_feature_vector(
-    pl_rade, pl_bmasse, pl_orbper, pl_orbsmax, pl_eqt, pl_dens,
-    st_teff, st_lum, st_met, st_spectype="G",
-    stellar_temp_score=None, stellar_lum_score=None,
-    stellar_compatibility_index=None, orbital_stability_factor=None,
+    pl_rade, pl_bmasse, pl_orbper, pl_orbsmax,
+    pl_eqt, pl_dens, st_teff, st_lum, st_met,
+    st_spectype="G", stellar_temp_score=None,
+    stellar_lum_score=None, stellar_compatibility_index=None,
+    orbital_stability_factor=None,
 ):
     if stellar_temp_score is None:
         stellar_temp_score = -abs(st_teff) * 0.15
@@ -85,10 +79,15 @@ def build_feature_vector(
         orbital_stability_factor = (pl_orbsmax - pl_orbper) * 0.1
 
     row = {
-        "pl_rade": float(pl_rade), "pl_bmasse": float(pl_bmasse),
-        "pl_orbper": float(pl_orbper), "pl_orbsmax": float(pl_orbsmax),
-        "pl_eqt": float(pl_eqt), "pl_dens": float(pl_dens),
-        "st_teff": float(st_teff), "st_lum": float(st_lum), "st_met": float(st_met),
+        "pl_rade": float(pl_rade),
+        "pl_bmasse": float(pl_bmasse),
+        "pl_orbper": float(pl_orbper),
+        "pl_orbsmax": float(pl_orbsmax),
+        "pl_eqt": float(pl_eqt),
+        "pl_dens": float(pl_dens),
+        "st_teff": float(st_teff),
+        "st_lum": float(st_lum),
+        "st_met": float(st_met),
         "stellar_temp_score": float(stellar_temp_score),
         "stellar_lum_score": float(stellar_lum_score),
         "stellar_compatibility_index": float(stellar_compatibility_index),
@@ -96,13 +95,13 @@ def build_feature_vector(
     }
 
     spec_cols = get_spec_cols()
-    ohe_dict  = {col: 0 for col in spec_cols}
-    spec_key  = f"st_spectype_{st_spectype.strip()}"
+    ohe_dict = {col: 0 for col in spec_cols}
+    spec_key = "st_spectype_" + st_spectype.strip()
     if spec_key in ohe_dict:
         ohe_dict[spec_key] = 1
     else:
         for col in spec_cols:
-            if col.startswith(f"st_spectype_{st_spectype.strip()}"):
+            if col.startswith("st_spectype_" + st_spectype.strip()):
                 ohe_dict[col] = 1
                 break
     row.update(ohe_dict)
@@ -123,10 +122,15 @@ def predict(input_dict):
             return default
 
     df = build_feature_vector(
-        pl_rade=_f("pl_rade"), pl_bmasse=_f("pl_bmasse"),
-        pl_orbper=_f("pl_orbper"), pl_orbsmax=_f("pl_orbsmax"),
-        pl_eqt=_f("pl_eqt"), pl_dens=_f("pl_dens"),
-        st_teff=_f("st_teff"), st_lum=_f("st_lum"), st_met=_f("st_met"),
+        pl_rade=_f("pl_rade"),
+        pl_bmasse=_f("pl_bmasse"),
+        pl_orbper=_f("pl_orbper"),
+        pl_orbsmax=_f("pl_orbsmax"),
+        pl_eqt=_f("pl_eqt"),
+        pl_dens=_f("pl_dens"),
+        st_teff=_f("st_teff"),
+        st_lum=_f("st_lum"),
+        st_met=_f("st_met"),
         st_spectype=str(input_dict.get("st_spectype", "G")).strip(),
         stellar_temp_score=_f("stellar_temp_score") if "stellar_temp_score" in input_dict else None,
         stellar_lum_score=_f("stellar_lum_score") if "stellar_lum_score" in input_dict else None,
@@ -134,10 +138,16 @@ def predict(input_dict):
         orbital_stability_factor=_f("orbital_stability_factor") if "orbital_stability_factor" in input_dict else None,
     )
 
-    model      = get_model()
+    model = get_model()
     prediction = int(model.predict(df)[0])
     probability = float(model.predict_proba(df)[0][1]) * 100
-    confidence  = "High" if probability >= 75 else "Moderate" if probability >= 45 else "Low"
+
+    if probability >= 75:
+        confidence = "High"
+    elif probability >= 45:
+        confidence = "Moderate"
+    else:
+        confidence = "Low"
 
     return {
         "habitable": prediction,
@@ -157,15 +167,81 @@ def get_sample_planets(n=12):
 
 def get_random_sample():
     samples = get_sample_planets(12)
-    return random.choice(samples) if samples else _sample_from_csv(1)[0]
+    if samples:
+        return random.choice(samples)
+    return _sample_from_csv(1)[0]
 
 
 def _sample_from_csv(n):
     if not os.path.exists(CSV_PATH):
         return []
-    df        = pd.read_csv(CSV_PATH)
+    df = pd.read_csv(CSV_PATH)
     spec_cols = [c for c in df.columns if c.startswith("st_spectype_")]
-    base_cols = ["pl_rade","pl_bmasse","pl_orbper","pl_orbsmax","pl_eqt","pl_dens","st_teff","st_lum","st_met"]
-    results   = []
+    base_cols = ["pl_rade", "pl_bmasse", "pl_orbper", "pl_orbsmax",
+                 "pl_eqt", "pl_dens", "st_teff", "st_lum", "st_met"]
+    results = []
     for _, row in df.sample(min(n, len(df)), random_state=42).iterrows():
- active = [c.replace("st_spectype_", "") for c in spec_cols if row.get(c, False)]
+        active = [c.replace("st_spectype_", "") for c in spec_cols if row.get(c, False)]
+        rec = {k: round(float(row[k]), 4) for k in base_cols}
+        rec["st_spectype"] = active[0] if active else "G"
+        rec["habitability_probability"] = round(float(row.get("habitability_probability", 0)) * 100, 1)
+        rec["habitability_binary"] = int(row.get("habitability_binary", 0))
+        results.append(rec)
+    return results
+
+
+def get_top_planets(n=10):
+    if not os.path.exists(CSV_PATH):
+        return []
+    df = pd.read_csv(CSV_PATH)
+    spec_cols = [c for c in df.columns if c.startswith("st_spectype_")]
+    top = df.nlargest(n, "habitability_probability")
+    results = []
+    for i, (_, row) in enumerate(top.iterrows(), 1):
+        active = [c.replace("st_spectype_", "") for c in spec_cols if row.get(c, False)]
+        results.append({
+            "rank": i,
+            "planet_id": "EXO-" + str(i).zfill(4),
+            "st_spectype": active[0] if active else "Unknown",
+            "pl_rade": round(float(row["pl_rade"]), 3),
+            "pl_bmasse": round(float(row["pl_bmasse"]), 3),
+            "pl_orbper": round(float(row["pl_orbper"]), 3),
+            "pl_orbsmax": round(float(row["pl_orbsmax"]), 3),
+            "pl_eqt": round(float(row["pl_eqt"]), 3),
+            "st_teff": round(float(row["st_teff"]), 3),
+            "habitability_probability": round(float(row["habitability_probability"]) * 100, 2),
+            "habitable": int(row["habitability_binary"]),
+        })
+    return results
+
+
+REQUIRED_FIELDS = [
+    "pl_rade", "pl_bmasse", "pl_orbper", "pl_orbsmax",
+    "pl_eqt", "pl_dens", "st_teff", "st_lum", "st_met", "st_spectype"
+]
+
+
+def validate_input(data):
+    for field in REQUIRED_FIELDS:
+        if field not in data:
+            return False, "Missing required field: " + field
+    for field in REQUIRED_FIELDS[:-1]:
+        try:
+            float(data[field])
+        except (TypeError, ValueError):
+            return False, "Field " + field + " must be a valid number."
+    if not isinstance(data.get("st_spectype"), str) or not data["st_spectype"].strip():
+        return False, "Field st_spectype must be a non-empty string."
+    return True, ""
+
+
+def validate_batch(rows):
+    if not isinstance(rows, list) or len(rows) == 0:
+        return False, "Batch must be a non-empty list."
+    if len(rows) > 500:
+        return False, "Batch size cannot exceed 500 rows."
+    for i, row in enumerate(rows):
+        ok, msg = validate_input(row)
+        if not ok:
+            return False, "Row " + str(i + 1) + ": " + msg
+    return True, ""
