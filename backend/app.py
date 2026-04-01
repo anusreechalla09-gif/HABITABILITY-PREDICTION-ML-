@@ -31,6 +31,9 @@ from utils import (
 
 # ── App Initialisation ─────────────────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+models_dir = os.path.join(BASE_DIR, "models")
+print("Files in models/:", os.listdir(models_dir))
+print("Files in data/:", os.listdir(os.path.join(BASE_DIR, "data")))
 FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
