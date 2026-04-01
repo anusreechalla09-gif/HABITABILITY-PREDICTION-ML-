@@ -4,6 +4,7 @@ import random
 import pickle
 import joblib
 import zipfile
+import urllib.request
 import numpy as np
 import pandas as pd
 
@@ -13,23 +14,29 @@ CSV_PATH      = os.path.join(BASE_DIR, "data", "habitability_ranked.csv")
 SAMPLES_PATH  = os.path.join(BASE_DIR, "data", "sample_planets.json")
 FEATURES_PATH = os.path.join(BASE_DIR, "data", "feature_cols.json")
 
-_model_zip = os.path.join(BASE_DIR, "models", "xgboost.zip")
-if not os.path.exists(MODEL_PATH) and os.path.exists(_model_zip):
-    print("Unzipping model...")
-    with zipfile.ZipFile(_model_zip, "r") as z:
-        z.extractall(os.path.join(BASE_DIR, "models"))
-        print("Files in zip:", z.namelist())
-    # Rename to xgboost.pkl if extracted with different name
-    models_dir = os.path.join(BASE_DIR, "models")
-    for f in os.listdir(models_dir):
-        if f.endswith(".pkl") and f != "xgboost.pkl":
-            os.rename(
-                os.path.join(models_dir, f),
-                os.path.join(models_dir, "xgboost.pkl")
-            )
-            print("Renamed", f, "to xgboost.pkl")
-    print("Model unzipped successfully")
+# ── Download model from Google Drive if not present ───────────────────────────
+GDRIVE_FILE_ID = "PASTE_YOUR_FILE_ID_HERE"   # ← replace this
 
+def download_model():
+    if os.path.exists(MODEL_PATH):
+        print("Model already exists, skipping download")
+        return
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    print("Downloading model from Google Drive...")
+    url = f"https://drive.google.com/uc?export=download&id={GDRIVE_FILE_ID}"
+    try:
+        urllib.request.urlretrieve(url, MODEL_PATH)
+        size = os.path.getsize(MODEL_PATH)
+        print(f"Model downloaded successfully ({size} bytes)")
+        if size < 1000:
+            os.remove(MODEL_PATH)
+            print("ERROR: Downloaded file too small - check Google Drive sharing settings")
+    except Exception as e:
+        print(f"Download failed: {e}")
+
+download_model()
+
+# ── Auto-unzip CSV if not present ─────────────────────────────────────────────
 _csv_zip = os.path.join(BASE_DIR, "data", "habitability_ranked.zip")
 if not os.path.exists(CSV_PATH) and os.path.exists(_csv_zip):
     print("Unzipping CSV...")
@@ -185,7 +192,7 @@ def get_random_sample():
 def _sample_from_csv(n):
     if not os.path.exists(CSV_PATH):
         return []
-    df = pd.read_csv(CSV_PATH)
+    df = pd.read_csv(CSV_PATH, nrows=500)
     spec_cols = [c for c in df.columns if c.startswith("st_spectype_")]
     base_cols = ["pl_rade", "pl_bmasse", "pl_orbper", "pl_orbsmax",
                  "pl_eqt", "pl_dens", "st_teff", "st_lum", "st_met"]
@@ -203,7 +210,7 @@ def _sample_from_csv(n):
 def get_top_planets(n=10):
     if not os.path.exists(CSV_PATH):
         return []
-    df = pd.read_csv(CSV_PATH)
+    df = pd.read_csv(CSV_PATH, nrows=5000)
     spec_cols = [c for c in df.columns if c.startswith("st_spectype_")]
     top = df.nlargest(n, "habitability_probability")
     results = []
