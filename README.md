@@ -239,10 +239,6 @@ GitHub: [@anusreechalla09-gif](https://github.com/anusreechalla09-gif)
 
 ---
 
-## 📄 License
-
-This project is for educational and research purposes.
-Data sourced from NASA Exoplanet Archive.
 
 ---
 
