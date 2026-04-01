@@ -18,6 +18,16 @@ if not os.path.exists(MODEL_PATH) and os.path.exists(_model_zip):
     print("Unzipping model...")
     with zipfile.ZipFile(_model_zip, "r") as z:
         z.extractall(os.path.join(BASE_DIR, "models"))
+        print("Files in zip:", z.namelist())
+    # Rename to xgboost.pkl if extracted with different name
+    models_dir = os.path.join(BASE_DIR, "models")
+    for f in os.listdir(models_dir):
+        if f.endswith(".pkl") and f != "xgboost.pkl":
+            os.rename(
+                os.path.join(models_dir, f),
+                os.path.join(models_dir, "xgboost.pkl")
+            )
+            print("Renamed", f, "to xgboost.pkl")
     print("Model unzipped successfully")
 
 _csv_zip = os.path.join(BASE_DIR, "data", "habitability_ranked.zip")
