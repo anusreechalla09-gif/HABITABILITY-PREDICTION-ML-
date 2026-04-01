@@ -15,7 +15,7 @@ SAMPLES_PATH  = os.path.join(BASE_DIR, "data", "sample_planets.json")
 FEATURES_PATH = os.path.join(BASE_DIR, "data", "feature_cols.json")
 
 # ── Download model from Google Drive if not present ───────────────────────────
-GDRIVE_FILE_ID = "PASTE_YOUR_FILE_ID_HERE"   # ← replace this
+GDRIVE_FILE_ID = "1CfD0hebCkQtQLOX7g6w1Z9xMJ8t-Wgok"   # ← replace this
 
 def download_model():
     if os.path.exists(MODEL_PATH):
